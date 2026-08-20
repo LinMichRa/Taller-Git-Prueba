@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Booking Itinerario Colombia</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+	<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Fraunces:opsz,wght@9..144,500;9..144,700&display=swap" rel="stylesheet" />
+	<link
+		rel="stylesheet"
+		href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+		integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+		crossorigin=""
+	/>
+	<style>
+		:root {
+			--bg: #f2efe8;
+			--card: #fff9f0;
+			--ink: #242019;
+			--muted: #615747;
+			--accent: #006d5b;
+			--accent-2: #d95f32;
+			--line: #ddcfb5;
+			--shadow: 0 12px 28px rgba(36, 32, 25, 0.12);
+			--radius: 18px;
+		}
+
+		* {
+			box-sizing: border-box;
+		}
+
+		body {
+			margin: 0;
+			min-height: 100vh;
+			font-family: "Space Grotesk", sans-serif;
+			color: var(--ink);
+			background:
+				radial-gradient(circle at 10% 10%, rgba(217, 95, 50, 0.12), transparent 35%),
+				radial-gradient(circle at 90% 90%, rgba(0, 109, 91, 0.15), transparent 40%),
+				var(--bg);
+		}
+
+		.layout {
+			display: grid;
+			grid-template-columns: minmax(320px, 430px) 1fr;
+			gap: 18px;
+			padding: 22px;
+			min-height: 100vh;
+		}
+
+		.panel {
+			background: var(--card);
+			border: 1px solid var(--line);
+			border-radius: var(--radius);
+			box-shadow: var(--shadow);
+			overflow: hidden;
+		}
+
+		.left {
+			display: flex;
+			flex-direction: column;
+		}
+
+		.hero {
+			padding: 22px 22px 12px;
+			border-bottom: 1px solid var(--line);
+			background: linear-gradient(130deg, rgba(0, 109, 91, 0.08), rgba(217, 95, 50, 0.08));
+		}
+
+		.hero h1 {
+			margin: 0;
+			font-family: "Fraunces", serif;
+			font-size: clamp(1.5rem, 3vw, 2rem);
+			line-height: 1.1;
+			letter-spacing: 0.3px;
+		}
+
+		.hero p {
+			margin: 8px 0 0;
+			color: var(--muted);
+			font-size: 0.94rem;
+		}
+
+		.content {
+			padding: 18px 22px 24px;
+			display: grid;
+			gap: 16px;
+		}
+
+		.fundamento {
+			margin: 0;
+			padding: 12px;
+			border: 1px dashed var(--line);
+			border-radius: 12px;
+			background: #fff;
+			color: #3d3428;
+			font-size: 0.91rem;
+			line-height: 1.45;
+		}
+
+		form {
+			display: grid;
+			gap: 12px;
+		}
+
+		label {
+			display: grid;
+			gap: 6px;
+			font-size: 0.88rem;
+			color: #3f3528;
+			font-weight: 500;
+		}
+
+		input,
+		select,
+		button {
+			font: inherit;
+		}
+
+		input,
+		select {
+			width: 100%;
+			border: 1px solid #cdbda3;
+			border-radius: 10px;
+			background: #fff;
+			padding: 10px 12px;
+			color: var(--ink);
+		}
+
+		input:focus,
+		select:focus {
+			outline: 2px solid rgba(0, 109, 91, 0.25);
+			border-color: var(--accent);
+		}
+
+		button {
+			border: 0;
+			border-radius: 11px;
+			padding: 11px 14px;
+			font-weight: 700;
+			letter-spacing: 0.2px;
+			color: #fff;
+			background: linear-gradient(135deg, var(--accent), #005545);
+			cursor: pointer;
+			transition: transform 120ms ease;
+		}
+
+		button:hover {
+			transform: translateY(-1px);
+		}
+
+		.resultado {
+			border: 1px solid var(--line);
+			border-radius: 12px;
+			background: #fff;
+			padding: 12px;
+			min-height: 96px;
+		}
+
+		.resultado h2 {
+			margin: 0 0 8px;
+			font-size: 1rem;
+			font-family: "Fraunces", serif;
+		}
+
+		.resultado p {
+			margin: 0;
+			color: #4f4538;
+			font-size: 0.9rem;
+			line-height: 1.45;
+		}
+
+		.right {
+			position: relative;
+			min-height: 460px;
+		}
+
+		.map-title {
+			position: absolute;
+			z-index: 700;
+			top: 12px;
+			left: 12px;
+			margin: 0;
+			padding: 8px 12px;
+			border-radius: 999px;
+			border: 1px solid var(--line);
+			background: rgba(255, 249, 240, 0.95);
+			font-family: "Fraunces", serif;
+			font-size: 0.96rem;
+			box-shadow: 0 8px 20px rgba(36, 32, 25, 0.16);
+		}
+
+		#map {
+			width: 100%;
+			height: 100%;
+			min-height: 460px;
+		}
+
+		@media (max-width: 920px) {
+			.layout {
+				grid-template-columns: 1fr;
+				min-height: auto;
+			}
+
+			.right,
+			#map {
+				min-height: 420px;
+			}
+		}
+	</style>
+</head>
+<body>
+	<main class="layout">
+		<section class="panel left">
+			<header class="hero">
+				<h1>Booking de Itinerario</h1>
+				<p>Arma un plan claro para tu ruta dentro de Colombia.</p>
+			</header>
+
+			<div class="content">
+				<p class="fundamento">
+					Fundamento para crear un itinerario: define una salida, una llegada y la intensidad horaria para equilibrar tiempos de viaje,
+					descansos y actividades. Una intensidad alta concentra mas actividades por dia; una intensidad baja prioriza comodidad.
+				</p>
+
+				<form id="itinerarioForm">
+					<label for="salida">Salida</label>
+					<input id="salida" name="salida" type="text" placeholder="Ej: Bogota" required />
+
+					<label for="llegada">Llegada</label>
+					<input id="llegada" name="llegada" type="text" placeholder="Ej: Medellin" required />
+
+					<label for="intensidad">Intensidad horaria</label>
+					<select id="intensidad" name="intensidad" required>
+						<option value="suave">Suave (2 a 4 h activas)</option>
+						<option value="media" selected>Media (4 a 6 h activas)</option>
+						<option value="alta">Alta (6 a 8 h activas)</option>
+					</select>
+
+					<button type="submit">Crear itinerario</button>
+				</form>
+
+				<article class="resultado" id="resultado">
+					<h2>Tu itinerario sugerido</h2>
+					<p>Completa el formulario para generar la recomendacion.</p>
+				</article>
+			</div>
+		</section>
+
+		<section class="panel right">
+			<h2 class="map-title">Mapa de Colombia</h2>
+			<div id="map" aria-label="Mapa de Colombia"></div>
+		</section>
+	</main>
+
+	<script
+		src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+		integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+		crossorigin=""
+	></script>
+	<script>
+		const cityCoords = {
+			bogota: [4.711, -74.0721],
+			medellin: [6.2442, -75.5812],
+			cali: [3.4516, -76.532],
+			barranquilla: [10.9685, -74.7813],
+			cartagena: [10.391, -75.4794],
+			bucaramanga: [7.1193, -73.1227],
+			pereira: [4.8133, -75.6961],
+			santaMarta: [11.2408, -74.199],
+			cucuta: [7.8939, -72.5078]
+		};
+
+		const map = L.map("map", { zoomControl: true }).setView([4.5709, -74.2973], 5);
+
+		L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+			attribution: "&copy; OpenStreetMap contributors"
+		}).addTo(map);
+
+		const colombiaBounds = L.latLngBounds(
+			L.latLng(-4.3, -81.9),
+			L.latLng(13.6, -66.7)
+		);
+
+		map.fitBounds(colombiaBounds);
+
+		const markers = [
+			["Bogota", cityCoords.bogota],
+			["Medellin", cityCoords.medellin],
+			["Cali", cityCoords.cali],
+			["Cartagena", cityCoords.cartagena],
+			["Barranquilla", cityCoords.barranquilla]
+		];
+
+		markers.forEach(([name, coords]) => {
+			L.marker(coords).addTo(map).bindPopup(name);
+		});
+
+		let routeLine = null;
+
+		const normalize = (text) =>
+			text
+				.toLowerCase()
+				.trim()
+				.normalize("NFD")
+				.replace(/[\u0300-\u036f]/g, "")
+				.replace(/\s+/g, "");
+
+		const form = document.getElementById("itinerarioForm");
+		const resultado = document.getElementById("resultado");
+
+		form.addEventListener("submit", (event) => {
+			event.preventDefault();
+
+			const salida = document.getElementById("salida").value.trim();
+			const llegada = document.getElementById("llegada").value.trim();
+			const intensidad = document.getElementById("intensidad").value;
+
+			const salidaKey = normalize(salida);
+			const llegadaKey = normalize(llegada);
+
+			const coordSalida = cityCoords[salidaKey];
+			const coordLlegada = cityCoords[llegadaKey];
+
+			const regla = {
+				suave: "Ritmo suave: prioriza descansos y traslados tranquilos.",
+				media: "Ritmo medio: combina visitas principales con pausas.",
+				alta: "Ritmo alto: mas actividades y tiempos ajustados."
+			};
+
+			resultado.innerHTML = `
+				<h2>Tu itinerario sugerido</h2>
+				<p><strong>Salida:</strong> ${salida || "No definida"}</p>
+				<p><strong>Llegada:</strong> ${llegada || "No definida"}</p>
+				<p><strong>Intensidad:</strong> ${intensidad}</p>
+				<p>${regla[intensidad]}</p>
+			`;
+
+			if (routeLine) {
+				map.removeLayer(routeLine);
+			}
+
+			if (coordSalida && coordLlegada) {
+				routeLine = L.polyline([coordSalida, coordLlegada], {
+					color: "#d95f32",
+					weight: 4,
+					opacity: 0.9
+				}).addTo(map);
+
+				map.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
+			}
+		});
+	</script>
+</body>
+</html>
